@@ -1,78 +1,112 @@
 %{
 package main
 
-type Statement struct {
-    command Command
-    args []Argument
-}
-type Command struct {
-    ident Ident
-}
-type Argument struct {
-    ident Ident
-}
-type Ident struct {
-    literal string
-}
-
 %}
 
 %union{
-    stmt  Statement
-    command Command
-    arg Argument
-    args []Argument
+    stmts []Stmt
+    stmt  Stmt
+    cmd Cmd
+    arg Arg
+    args []Arg
     ident Ident
+    tok string
 }
 
-%type<stmt> program
-%type<stmt> statement
-%type<arg> argument
-%type<args> arguments
-%type<command> command
+%type<stmts> prog
+%type<stmts> stmts
+%type<stmt> stmt
+%type<stmt> if_stmt
+%type<stmt> begin_stmt
+%type<arg> arg
+%type<args> args
+%type<cmd> cmd
 %token<ident> IDENT
-
-%left '+' '-'
+%token<tok> IF ELSE BEGIN END
 
 %%
 
-program
-    : statement
+prog
+    : stmts
     {
         $$ = $1
         yylex.(*Lexer).result = $$
     }
 
-statement
-    : command
+stmts
+    : stmt
     {
-        $$ = Statement{command: $1}
+        $$ = []Stmt{$1}
     }
-    | command arguments
+    | stmt stmts
     {
-        $$ = Statement{command: $1, args: $2}
-    }
-
-arguments
-    : argument
-    {
-        $$ = []Argument{$1}
-    }
-    | argument arguments
-    {
-        $$ = append($2, $1)
+        $$ = append([]Stmt{$1}, $2...)
     }
 
-command
+stmt
+    : cmd eos
+    {
+        $$ = CmdStmt{Cmd: $1}
+    }
+    | cmd args eos
+    {
+        $$ = CmdStmt{Cmd: $1, Args: $2}
+    }
+    | begin_stmt
+    | if_stmt
+
+begin_stmt
+    : BEGIN eos stmts END eos
+    {
+        $$ = BeginStmt{Body: $3}
+    }
+
+if_stmt
+    : IF stmt stmts END eos
+    {
+        $$ = IfStmt{Cond: $2, Body: $3}
+    }
+    | IF stmt stmts ELSE eos stmts END eos
+    {
+        $$ = IfStmt{Cond: $2, Body: $3, Else: $6}
+    }
+    | IF stmt stmts ELSE if_stmt
+    {
+        $$ = IfStmt{Cond: $2, Body: $3, Else: []Stmt{$5}}
+    }
+
+args
+    : arg
+    {
+        $$ = []Arg{$1}
+    }
+    | arg args
+    {
+        $$ = append([]Arg{$1}, $2...)
+    }
+
+cmd
     : IDENT
     {
-        $$ = Command{ident: $1}
+        $$ = Cmd{ident: $1}
     }
 
-argument
+arg
     : IDENT
     {
-        $$ = Argument{ident: $1}
+        $$ = Arg{ident: $1}
     }
+
+semicolon
+    : ';'
+
+break
+    : '\n'
+    | break '\n'
+
+eos
+    : semicolon
+    | break
+    | semicolon break
 
 %%

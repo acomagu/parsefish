@@ -1,14 +1,16 @@
 package main
 
 import (
-	"strings"
 	"fmt"
 	"os"
 )
 
 func main() {
-    l := new(Lexer)
-    l.Init(strings.NewReader(os.Args[1]))
-    yyParse(l)
-    fmt.Printf("%#v\n", l.result)
+	yyDebug = 100
+	yyErrorVerbose = true
+	l := new(Lexer)
+
+	l.s.Init(os.Stdin)
+	yyParse(l)
+	fmt.Printf("%#v\n", l.result)
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"go/ast"
 )
 
 func main() {
@@ -12,5 +12,5 @@ func main() {
 
 	l.s.Init(os.Stdin)
 	yyParse(l)
-	fmt.Printf("%#v\n", l.result)
+	ast.Print(nil, l.result)
 }

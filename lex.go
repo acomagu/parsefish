@@ -5,7 +5,7 @@ import (
 	"text/scanner"
 )
 
-var tokens = map[int]string{
+var keywords = map[int]string{
 	IF: "if",
 	ELSE: "else",
 	BEGIN: "begin",
@@ -65,7 +65,7 @@ func (s *Scanner) skipBrank() {
 }
 
 func (*Scanner) tokenOf(lit string) (int, bool) {
-	for tok, l := range tokens {
+	for tok, l := range keywords {
 		if l == lit {
 			return tok, true
 		}

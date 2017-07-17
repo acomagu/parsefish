@@ -6,9 +6,9 @@ package main
 %union{
     stmts []Stmt
     stmt  Stmt
-    cmd Cmd
-    arg Arg
-    args []Arg
+    cmd CmdExpr
+    arg ArgExpr
+    args []ArgExpr
     ident Ident
     tok string
 }
@@ -78,23 +78,23 @@ if_stmt
 args
     : arg
     {
-        $$ = []Arg{$1}
+        $$ = []ArgExpr{$1}
     }
     | arg args
     {
-        $$ = append([]Arg{$1}, $2...)
+        $$ = append([]ArgExpr{$1}, $2...)
     }
 
 cmd
     : IDENT
     {
-        $$ = Cmd{ident: $1}
+        $$ = $1
     }
 
 arg
     : IDENT
     {
-        $$ = Arg{ident: $1}
+        $$ = $1
     }
 
 semicolon

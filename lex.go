@@ -86,7 +86,7 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	tok, lit := l.s.Scan()
 	switch tok {
 	case IDENT:
-		lval.ident = Ident(lit)
+		lval.ident = Ident{Name: lit}
 		fmt.Printf("%s: IDENT\n", lit)
 	}
 	return tok

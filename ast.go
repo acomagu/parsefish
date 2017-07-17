@@ -13,9 +13,25 @@ func (stmtImpl) stmt() {}
 
 type CmdStmt struct {
 	stmtImpl
-	Cmd  Cmd
-	Args []Arg
+	Cmd  CmdExpr
+	Args []ArgExpr
 }
+
+type CmdExpr interface {
+	cmdExpr()
+}
+
+type cmdExprImpl struct{}
+
+func (cmdExprImpl) cmdExpr() {}
+
+type ArgExpr interface {
+	argExpr()
+}
+
+type argExprImpl struct{}
+
+func (argExprImpl) argExpr() {}
 
 type BeginStmt struct {
 	stmtImpl
@@ -29,12 +45,22 @@ type IfStmt struct {
 	Else []Stmt
 }
 
-type Cmd struct {
-	ident Ident
+type VarExpr struct {
+	argExprImpl
+	Name string
 }
 
-type Arg struct {
-	ident Ident
+type Expr interface {
+	expr()
 }
 
-type Ident string
+type exprImpl struct{}
+
+func (exprImpl) expr() {}
+
+type Ident struct {
+	exprImpl
+	cmdExprImpl
+	argExprImpl
+	Name string
+}

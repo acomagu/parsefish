@@ -13,25 +13,9 @@ func (stmtImpl) stmt() {}
 
 type CmdStmt struct {
 	stmtImpl
-	Cmd  CmdExpr
-	Args []ArgExpr
+	Cmd  Expr
+	Args []Expr
 }
-
-type CmdExpr interface {
-	cmdExpr()
-}
-
-type cmdExprImpl struct{}
-
-func (cmdExprImpl) cmdExpr() {}
-
-type ArgExpr interface {
-	argExpr()
-}
-
-type argExprImpl struct{}
-
-func (argExprImpl) argExpr() {}
 
 type BeginStmt struct {
 	stmtImpl
@@ -45,8 +29,28 @@ type IfStmt struct {
 	Else []Stmt
 }
 
+type FunctionStmt struct {
+	stmtImpl
+	Args []Expr
+	Body []Stmt
+}
+
+type PipeStmt struct {
+	stmtImpl
+	Lhs Stmt
+	Rhs Stmt
+}
+
+type RedirectStmt struct {
+	stmtImpl
+	Lhs Stmt
+	Rhs Expr
+	Err bool
+	Append bool
+}
+
 type VarExpr struct {
-	argExprImpl
+	strExprImpl
 	Name string
 }
 
@@ -58,9 +62,34 @@ type exprImpl struct{}
 
 func (exprImpl) expr() {}
 
-type Ident struct {
+type StrsExpr []StrExpr
+
+func (StrsExpr) expr() {}
+
+func (StrsExpr) cmdExpr() {}
+
+type StrExpr interface{
+	strExpr()
+}
+
+type strExprImpl struct{}
+
+func (strExprImpl) strExpr() {}
+
+type CmdSubExpr struct {
 	exprImpl
-	cmdExprImpl
-	argExprImpl
+	strExprImpl
+	Body []Stmt
+}
+
+type Ident struct {
+	strExprImpl
 	Name string
 }
+
+type FD struct {
+	exprImpl
+	N int
+}
+
+type Token int

@@ -4,11 +4,11 @@ package main
 %}
 
 %union{
-    stmts []Stmt
+    stmts Stmts
     stmt  Stmt
-    strs StrsExpr
+    str StrExpr
     expr Expr
-    exprs []Expr
+    exprs Exprs
 }
 
 %type<stmts> prog
@@ -24,13 +24,10 @@ package main
 %type<stmt> redirect_stmt
 %type<expr> cmd
 %type<expr> arg
-%type<strs> strs
-%type<strs> paren_strs
-%type<strs> open_left_paren
+%type<str> str paren_str open_left_paren
 %type<exprs> args
-%token<expr> VAR
-%token<strs> STRS STRS_AND_LEFT_PAREN RIGHT_PAREN_AND_STRS RIGHT_PAREN_AND_STRS_AND_LEFT_PAREN
-%token<expr> REDIRECT_TO_FD ERR_REDIRECT_TO_FD CMD_SUB
+%token<str> STR STR_AND_LEFT_PAREN RIGHT_PAREN_AND_STR RIGHT_PAREN_AND_STR_AND_LEFT_PAREN
+%token<expr> REDIRECT_TO_FD ERR_REDIRECT_TO_FD CMD_SUB VAR
 %token<symbol> APPEND_REDIRECT APPEND_ERR_REDIRECT NEXT_RIGHT_PAREN NEXT_LEFT_PAREN
 %token<kwd> IF ELSE BEGIN END FUNCTION
 
@@ -46,11 +43,11 @@ prog
 lines
     :
     {
-        $$ = []Stmt{}
+        $$ = Stmts{}
     }
     | line lines
     {
-        $$ = append([]Stmt{$1}, $2...)
+        $$ = append(Stmts{$1}, $2...)
     }
 
 line
@@ -62,7 +59,7 @@ line
 stmts
     : stmt
     {
-        $$ = []Stmt{$1}
+        $$ = Stmts{$1}
     }
     | stmt eos stmts
     {
@@ -104,7 +101,7 @@ if_stmt
     }
     | IF line lines ELSE if_stmt
     {
-        $$ = IfStmt{Cond: $2, Body: $3, Else: []Stmt{$5}}
+        $$ = IfStmt{Cond: $2, Body: $3, Else: Stmts{$5}}
     }
 
 function_stmt
@@ -124,11 +121,11 @@ pipe_stmt
     }
 
 redirect_stmt
-    : stmt '>' STRS
+    : stmt '>' STR
     {
         $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: false}
     }
-    | stmt APPEND_REDIRECT STRS
+    | stmt APPEND_REDIRECT STR
     {
         $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: true}
     }
@@ -136,11 +133,11 @@ redirect_stmt
     {
         $$ = RedirectStmt{Lhs: $1, Rhs: $2, Err: false, Append: false}
     }
-    | stmt '^' STRS
+    | stmt '^' STR
     {
         $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: false}
     }
-    | stmt APPEND_ERR_REDIRECT STRS
+    | stmt APPEND_ERR_REDIRECT STR
     {
         $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: true}
     }
@@ -152,7 +149,7 @@ redirect_stmt
 args
     : arg
     {
-        $$ = []Expr{$1}
+        $$ = Exprs{$1}
     }
     | args arg
     {
@@ -160,41 +157,44 @@ args
     }
 
 cmd
-    : strs
+    : str
     {
         $$ = $1
     }
 
 arg
-    : strs
+    : str
     {
         $$ = $1
     }
 
-strs
-    : STRS
-    | paren_strs
+str
+    : STR
+    {
+        $$ = $1
+    }
+    | paren_str
 
-paren_strs
+paren_str
     : '(' stmts open_left_paren
     {
-        $$ = append(StrsExpr{CmdSubExpr{Body: $2}}, $3...)
+        $$ = append(StrExpr{CmdSub{Body: $2}}, $3...)
     }
-    | STRS_AND_LEFT_PAREN stmts open_left_paren
+    | STR_AND_LEFT_PAREN stmts open_left_paren
     {
-        tmp := append($1, CmdSubExpr{Body: $2})
+        tmp := append($1, CmdSub{Body: $2})
         $$ = append(tmp, $3...)
     }
 
 open_left_paren
     : ')'
     {
-        $$ = StrsExpr{}
+        $$ = StrExpr{}
     }
-    | RIGHT_PAREN_AND_STRS
-    | RIGHT_PAREN_AND_STRS_AND_LEFT_PAREN stmts open_left_paren
+    | RIGHT_PAREN_AND_STR
+    | RIGHT_PAREN_AND_STR_AND_LEFT_PAREN stmts open_left_paren
     {
-        tmp := append($1, CmdSubExpr{Body: $2})
+        tmp := append($1, CmdSub{Body: $2})
         $$ = append(tmp, $3...)
     }
 

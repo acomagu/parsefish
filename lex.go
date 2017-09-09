@@ -27,76 +27,94 @@ type Scanner struct {
 	scanner.Scanner
 }
 
-func (s *Scanner) scanSingleQuoted() (StrsExpr, error) {
-	strs := StrsExpr{}
+func newIdent(pos scanner.Position, name string) Ident {
+	ident := Ident{Name: name}
+	ident.SetPos(pos)
+	return ident
+}
+
+func newVar(pos scanner.Position, name string) VarExpr {
+	v := VarExpr{Name: name}
+	v.SetPos(pos)
+	return v
+}
+
+func newFD(pos scanner.Position, n int) FD {
+	fd := FD{N: n}
+	fd.SetPos(pos)
+	return fd
+}
+
+func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
+	str := StrExpr{}
 	s.Next()  // The starting '\''
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
-			return StrsExpr{}, fmt.Errorf("unexpected EOF")
+			return StrExpr{}, fmt.Errorf("unexpected EOF")
 
 		case s.isSingleQuotedIdentChar(s.Peek()):
 			ident, err := s.scanSingleQuotedIdent()
 			if err != nil {
-				return StrsExpr{}, err
+				return StrExpr{}, err
 			}
 
-			strs = append(strs, ident)
+			str = append(str, ident)
 
 		case s.Peek() == '\'':
 			s.Next()
-			return strs, nil
+			return str, nil
 
 		default:
 			ident, err := s.scanSingleQuotedIdent()
 			if err != nil {
-				return StrsExpr{}, err
+				return StrExpr{}, err
 			}
 
-			strs = append(strs, ident)
+			str = append(str, ident)
 		}
 	}
 }
 
-func (s *Scanner) scanDoubleQuoted() (StrsExpr, error) {
-	strs := StrsExpr{}
+func (s *Scanner) scanDoubleQuoted() (StrExpr, error) {
+	str := StrExpr{}
 	s.Next()  // The starting '"'
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
-			return StrsExpr{}, fmt.Errorf("unexpected EOF")
+			return StrExpr{}, fmt.Errorf("unexpected EOF")
 
 		case s.isDoubleQuotedIdentChar(s.Peek()):
 			ident, err := s.scanDoubleQuotedIdent()
 			if err != nil {
-				return StrsExpr{}, err
+				return StrExpr{}, err
 			}
 
-			strs = append(strs, ident)
+			str = append(str, ident)
 
 		case s.Peek() == '$':
 			vare, err := s.scanVar()
 			if err != nil {
-				return StrsExpr{}, err
+				return StrExpr{}, err
 			}
 
-			strs = append(strs, vare)
+			str = append(str, vare)
 
 		case s.Peek() == '"':
 			s.Next()
-			return strs, nil
+			return str, nil
 
 		default:
 			ident, err := s.scanDoubleQuotedIdent()
 			if err != nil {
-				return StrsExpr{}, err
+				return StrExpr{}, err
 			}
 
-			strs = append(strs, ident)
+			str = append(str, ident)
 		}
 	}
 }
@@ -137,6 +155,7 @@ func (s *Scanner) isSingleQuotedSpecialChar(c rune) bool {
 }
 
 func (s *Scanner) scanDoubleQuotedIdent() (Ident, error) {
+	pos := s.Pos()
 	var ret []rune
 	for s.isDoubleQuotedIdentChar(s.Peek()) {
 		ret = append(ret, s.Peek())
@@ -145,10 +164,11 @@ func (s *Scanner) scanDoubleQuotedIdent() (Ident, error) {
 	if len(ret) == 0 {
 		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
-	return Ident{Name: string(ret)}, nil
+	return newIdent(pos, string(ret)), nil
 }
 
 func (s *Scanner) scanSingleQuotedIdent() (Ident, error) {
+	pos := s.Pos()
 	var ret []rune
 	for s.isSingleQuotedIdentChar(s.Peek()) {
 		ret = append(ret, s.Peek())
@@ -157,7 +177,7 @@ func (s *Scanner) scanSingleQuotedIdent() (Ident, error) {
 	if len(ret) == 0 {
 		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
-	return Ident{Name: string(ret)}, nil
+	return newIdent(pos, string(ret)), nil
 }
 
 func (s *Scanner) isNumber(c rune) bool {
@@ -177,6 +197,8 @@ func (s *Scanner) isBrank(c rune) bool {
 }
 
 func (s *Scanner) scanVar() (VarExpr, error) {
+	pos := s.Pos()
+
 	s.Next() // The '$'
 	var ret []rune
 	for s.isVarChar(s.Peek()) {
@@ -188,7 +210,7 @@ func (s *Scanner) scanVar() (VarExpr, error) {
 	}
 
 	name := string(ret)
-	return VarExpr{Name: name}, nil
+	return newVar(pos, name), nil
 }
 
 func (s *Scanner) isVarChar(c rune) bool {
@@ -196,6 +218,7 @@ func (s *Scanner) isVarChar(c rune) bool {
 }
 
 func (s *Scanner) scanIdent() (Ident, error) {
+	pos := s.Pos()
 	var ret []rune
 	for s.isIdentChar(s.Peek()) {
 		fmt.Printf("RETERET: %#v\n", ret)
@@ -205,77 +228,76 @@ func (s *Scanner) scanIdent() (Ident, error) {
 	if len(ret) == 0 {
 		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
-	return Ident{Name: string(ret)}, nil
+	return newIdent(pos, string(ret)), nil
 }
 
 func (s *Scanner) isStrChar(c rune) bool {
 	return true
 }
 
-func (s *Scanner) scanStrs() (int, StrsExpr, error) {
+func (s *Scanner) scanStrs() (int, StrExpr, error) {
 	withRightParen := false
-	strs := StrsExpr{}
+	str := StrExpr{}
 	for {
-		fmt.Printf("NENENENEXET: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == '$':
 			vare, err := s.scanVar()
 			if err != nil {
 				return 0, nil, err
 			}
-			strs = append(strs, vare)
+			str = append(str, vare)
 
 		case s.Peek() == '"':
-			quotedStrs, err := s.scanDoubleQuoted()
+			quotedStr, err := s.scanDoubleQuoted()
 			if err != nil {
 				return 0, nil, err
 			}
 
-			strs = append(strs, quotedStrs...)
+			str = append(str, quotedStr...)
 
 		case s.Peek() == '\'':
-			quotedStrs, err := s.scanSingleQuoted()
+			quotedStr, err := s.scanSingleQuoted()
 			if err != nil {
 				return 0, nil, err
 			}
 
-			strs = append(strs, quotedStrs...)
+			str = append(str, quotedStr...)
 
 		case s.Peek() == ')':
-			if len(strs) > 0 {
-				return STRS, strs, nil
+			if len(str) > 0 {
+				return STR, str, nil
 			}
 			if withRightParen {
-				if len(strs) == 0 {
-					return ')', strs, nil
+				if len(str) == 0 {
+					return ')', str, nil
 				}
-				return RIGHT_PAREN_AND_STRS, strs, nil
+				return RIGHT_PAREN_AND_STR, str, nil
 			}
 			s.Next()
 			withRightParen = true
 
 		case s.Peek() == '(':
 			s.Next()
-			if len(strs) == 0 && !withRightParen {
-				return '(', strs, nil
+			if len(str) == 0 && !withRightParen {
+				return '(', str, nil
 			}
 			if withRightParen {
-				return RIGHT_PAREN_AND_STRS_AND_LEFT_PAREN, strs, nil
+				return RIGHT_PAREN_AND_STR_AND_LEFT_PAREN, str, nil
 			}
-			return STRS_AND_LEFT_PAREN, strs, nil
+			return STR_AND_LEFT_PAREN, str, nil
 
 		case s.isSpecialChar(s.Peek()):
 			if withRightParen {
-				return RIGHT_PAREN_AND_STRS, strs, nil
+				return RIGHT_PAREN_AND_STR, str, nil
 			}
-			return STRS, strs, nil
+			return STR, str, nil
 
 		default:
 			ident, err := s.scanIdent()
 			if err != nil {
 				return 0, nil, err
 			}
-			strs = append(strs, ident)
+			str = append(str, ident)
 			fmt.Printf("IDENT: %#v\n", ident)
 		}
 	}
@@ -294,9 +316,11 @@ func (s *Scanner) skipComment() {
 }
 
 func (s *Scanner) scanFD() (FD, error) {
+	pos := s.Pos()
+
 	s.Next() // '&'
 	if s.Peek() == '-' {
-		return FD{N: -1}, nil
+		return newFD(pos, -1), nil
 	}
 
 	ret := []rune{}
@@ -308,20 +332,18 @@ func (s *Scanner) scanFD() (FD, error) {
 	if err != nil {
 		return FD{}, err
 	}
-	return FD{N: n}, nil
+	return newFD(pos, n), nil
 }
 
-func (*Scanner) tokenOf(v StrsExpr) (int, bool) {
-	if len(v) != 1 {
-		return 0, false
+func (*Scanner) tokenOf(e StrExpr) (int, bool) {
+	lit := ""
+	for _, v := range e {
+		ident, ok := v.(Ident)
+		if !ok {
+			return 0, false
+		}
+		lit += ident.Name
 	}
-
-	ident, ok := v[0].(Ident)
-	if !ok {
-		return 0, false
-	}
-
-	lit := ident.Name
 
 	for tok, l := range keywords {
 		if l == lit {
@@ -365,7 +387,7 @@ func (l *Lexer) mainLex(lval *yySymType) (int, error) {
 			if err != nil {
 				return 0, err
 			}
-			lval.expr = fd
+			lval.expr = StrExpr{fd}
 			return REDIRECT_TO_FD, nil
 		case '>':
 			return APPEND_REDIRECT, nil
@@ -381,7 +403,7 @@ func (l *Lexer) mainLex(lval *yySymType) (int, error) {
 			if err != nil {
 				return 0, err
 			}
-			lval.expr = fd
+			lval.expr = StrExpr{fd}
 			return ERR_REDIRECT_TO_FD, nil
 
 		case '^':
@@ -398,18 +420,19 @@ func (l *Lexer) mainLex(lval *yySymType) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if tok != STRS {
-			lval.strs = v
+		if tok != STR {
+			lval.str = v
 			return tok, nil
 		}
+
 		if tok, ok := s.tokenOf(v); ok {
 			fmt.Printf("TOKEN: %#v\n", tok)
 			return tok, nil
 		}
-		lval.strs = v
+		lval.str = v
 
-		fmt.Printf("STRS: %#v\n", v)
-		return STRS, nil
+		fmt.Printf("STR: %#v\n", v)
+		return STR, nil
 	}
 }
 

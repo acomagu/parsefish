@@ -1,13 +1,39 @@
 package main
 
-type Node interface{}
+import (
+	"text/scanner"
+)
+
+type Node interface {
+	Pos() scanner.Position
+}
+
+type nodeImpl struct {
+	pos scanner.Position
+}
+
+func (n nodeImpl) Pos() scanner.Position {
+	return n.pos
+}
+
+func (n *nodeImpl) SetPos(pos scanner.Position) {
+	n.pos = pos
+}
+
+type Stmts []Stmt
+
+func (s Stmts) Pos() scanner.Position {
+	return s[0].Pos()
+}
 
 type Stmt interface {
 	Node
 	stmt()
 }
 
-type stmtImpl struct{}
+type stmtImpl struct {
+	nodeImpl
+}
 
 func (stmtImpl) stmt() {}
 
@@ -15,6 +41,10 @@ type CmdStmt struct {
 	stmtImpl
 	Cmd  Expr
 	Args []Expr
+}
+
+func (s CmdStmt) Pos() scanner.Position {
+	return s.Cmd.Pos()
 }
 
 type BeginStmt struct {
@@ -41,55 +71,80 @@ type PipeStmt struct {
 	Rhs Stmt
 }
 
+func (s PipeStmt) Pos() scanner.Position {
+	return s.Lhs.Pos()
+}
+
 type RedirectStmt struct {
 	stmtImpl
-	Lhs Stmt
-	Rhs Expr
-	Err bool
+	Lhs    Stmt
+	Rhs    Expr
+	Err    bool
 	Append bool
 }
 
-type VarExpr struct {
-	strExprImpl
-	Name string
+func (s RedirectStmt) Pos() scanner.Position {
+	return s.Lhs.Pos()
+}
+
+type Exprs []Expr
+
+func (e Exprs) Pos() scanner.Position {
+	return e[0].Pos()
 }
 
 type Expr interface {
+	Node
 	expr()
 }
 
-type exprImpl struct{}
+type exprImpl struct {
+	nodeImpl
+}
 
 func (exprImpl) expr() {}
 
-type StrsExpr []StrExpr
+type StrExpr []SubStr
 
-func (StrsExpr) expr() {}
-
-func (StrsExpr) cmdExpr() {}
-
-type StrExpr interface{
-	strExpr()
+func (e StrExpr) Pos() scanner.Position {
+	return e[0].Pos()
 }
 
-type strExprImpl struct{}
+func (StrExpr) expr() {}
 
-func (strExprImpl) strExpr() {}
-
-type CmdSubExpr struct {
+type strExprImpl struct {
 	exprImpl
-	strExprImpl
+}
+
+type SubStr interface {
+	Node
+	subStr()
+}
+
+type subStrImpl struct {
+	nodeImpl
+}
+
+func (subStrImpl) subStr() {}
+
+type CmdSub struct {
+	subStrImpl
 	Body []Stmt
 }
 
 type Ident struct {
-	strExprImpl
+	subStrImpl
 	Name string
 }
 
 type FD struct {
-	exprImpl
+	subStrImpl
 	N int
+}
+
+type VarExpr struct {
+	subStrImpl
+	Name string
 }
 
 type Token int

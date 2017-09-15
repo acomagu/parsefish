@@ -1,22 +1,22 @@
 package main
 
 import (
-	"os"
 	"go/ast"
-	"fmt"
+	"strings"
 )
 
-func main() {
-	yyDebug = 100
-	yyErrorVerbose = true
+// Node might be Expr.
+func ParseExpr(x string) Node {
 	s := new(Scanner)
+	s.Init(strings.NewReader(x))
 	l := new(Lexer)
 	l.s = s
-
-	l.s.Init(os.Stdin)
 	yyParse(l)
-	ast.Print(nil, l.result)
-	Inspect(Stmts(l.result), visitor)
+	return Stmts(l.result)
+}
+
+func Print(x interface{}) error {
+	return ast.Print(nil, x)
 }
 
 type inspector func(Node) bool

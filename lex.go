@@ -2,24 +2,24 @@ package main
 
 import (
 	"fmt"
-	"text/scanner"
 	"strconv"
+	"text/scanner"
 )
 
 var (
 	singleQuotedSpecials = []rune{-1, '\\', '\''}
 	doubleQuotedSpecials = []rune{-1, '\\', '"', '$'}
-	specials = []rune{-1, '\t', '\n', '$', '?', '*', '~', '#', '(', ')', '{', '}', '[', ']', '<', '>', '^', '&', ';', '\'', '"', '\\', ' '}
+	specials             = []rune{-1, '\t', '\n', '$', '?', '*', '~', '#', '(', ')', '{', '}', '[', ']', '<', '>', '^', '&', ';', '\'', '"', '\\', ' '}
 )
 
 type ExpectIdentError error
 type ExpectVarNameError error
 
 var keywords = map[int]string{
-	IF: "if",
-	ELSE: "else",
-	BEGIN: "begin",
-	END: "end",
+	IF:       "if",
+	ELSE:     "else",
+	BEGIN:    "begin",
+	END:      "end",
 	FUNCTION: "function",
 }
 
@@ -47,7 +47,7 @@ func newFD(pos scanner.Position, n int) FD {
 
 func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
 	str := StrExpr{}
-	s.Next()  // The starting '\''
+	s.Next() // The starting '\''
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
@@ -80,7 +80,7 @@ func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
 
 func (s *Scanner) scanDoubleQuoted() (StrExpr, error) {
 	str := StrExpr{}
-	s.Next()  // The starting '"'
+	s.Next() // The starting '"'
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
@@ -365,7 +365,7 @@ type Lexer struct {
 func (l *Lexer) mainLex(lval *yySymType) (int, error) {
 	s := l.s
 
-	RETRY:
+RETRY:
 	s.skipBrank()
 	c := s.Peek()
 	fmt.Printf("NEXT CHAR: %c\n", byte(c))

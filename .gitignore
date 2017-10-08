@@ -18,7 +18,5 @@
 .glide/
 
 # End of https://www.gitignore.io/api/go
-*.output
-*.tab.c
-ast
-parser.go
+**/*.output
+**/*.tab.c

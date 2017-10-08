@@ -1,5 +1,5 @@
 %{
-package parsefish
+package parser
 
 import (
 	"github.com/acomagu/parsefish/ast"

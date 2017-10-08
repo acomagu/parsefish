@@ -1,5 +1,3 @@
-//go:generate goyacc -o parser.go parser.go.y
-
 package parsefish
 
 import (
@@ -7,16 +5,12 @@ import (
 	"strings"
 
 	"github.com/acomagu/parsefish/ast"
+	"github.com/acomagu/parsefish/parser"
 )
 
 // Node might be Expr.
 func ParseExpr(x string) ast.Node {
-	s := new(Scanner)
-	s.Init(strings.NewReader(x))
-	l := new(Lexer)
-	l.s = s
-	yyParse(l)
-	return ast.Stmts(l.result)
+	return parser.Parse(strings.NewReader(x))
 }
 
 func Print(x interface{}) error {

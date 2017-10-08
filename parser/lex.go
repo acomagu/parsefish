@@ -1,4 +1,4 @@
-package parsefish
+package parser
 
 import (
 	"fmt"

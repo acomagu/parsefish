@@ -53,15 +53,6 @@ ast.Print(tree)
     31  }
 ```
 
-## Installation
-
-The `go generate` command must be run before using.
-
-```
-$ go get github.com/acomagu/parsefish
-$ go generate github.com/acomagu/parsefish/internal/yyparse
-```
-
 ## Project Status
 
 Experimental. The API can be changed roughly!

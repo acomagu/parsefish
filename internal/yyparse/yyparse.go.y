@@ -1,5 +1,5 @@
 %{
-package parser
+package yyparse
 
 import (
 	"github.com/acomagu/parsefish/ast"

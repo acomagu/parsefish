@@ -1,6 +1,6 @@
 # parsefish
 
-Parser for Fish shell script written in Go.
+The Fish shell parser written in Go.
 
 ## Description
 

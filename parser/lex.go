@@ -52,7 +52,6 @@ func (s *Scanner) scanSingleQuoted() (ast.StrExpr, error) {
 	s.Next() // The starting '\''
 
 	for {
-		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
 			return ast.StrExpr{}, fmt.Errorf("unexpected EOF")
@@ -85,7 +84,6 @@ func (s *Scanner) scanDoubleQuoted() (ast.StrExpr, error) {
 	s.Next() // The starting '"'
 
 	for {
-		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
 			return ast.StrExpr{}, fmt.Errorf("unexpected EOF")
@@ -223,7 +221,6 @@ func (s *Scanner) scanIdent() (ast.Ident, error) {
 	pos := s.Pos()
 	var ret []rune
 	for s.isIdentChar(s.Peek()) {
-		fmt.Printf("RETERET: %#v\n", ret)
 		ret = append(ret, s.Peek())
 		s.Next()
 	}
@@ -300,7 +297,6 @@ func (s *Scanner) scanStrs() (int, ast.StrExpr, error) {
 				return 0, nil, err
 			}
 			str = append(str, ident)
-			fmt.Printf("IDENT: %#v\n", ident)
 		}
 	}
 }
@@ -370,7 +366,6 @@ func (l *Lexer) mainLex(lval *yySymType) (int, error) {
 RETRY:
 	s.skipBrank()
 	c := s.Peek()
-	fmt.Printf("NEXT CHAR: %c\n", byte(c))
 
 	switch c {
 	case scanner.EOF:
@@ -428,12 +423,10 @@ RETRY:
 		}
 
 		if tok, ok := s.tokenOf(v); ok {
-			fmt.Printf("TOKEN: %#v\n", tok)
 			return tok, nil
 		}
 		lval.str = v
 
-		fmt.Printf("STR: %#v\n", v)
 		return STR, nil
 	}
 }
@@ -444,11 +437,9 @@ func (l *Lexer) Lex(lval *yySymType) int {
 		panic(err)
 	}
 
-	fmt.Printf("POSITION: %s\n", l.s.Pos())
 	return tok
 }
 
 func (l *Lexer) Error(e string) {
-	fmt.Printf("%#+v\n", yyErrorMessages)
 	panic(e)
 }

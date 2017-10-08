@@ -1,14 +1,17 @@
 %{
-package main
+package parsefish
 
+import (
+	"github.com/acomagu/parsefish/ast"
+)
 %}
 
 %union{
-    stmts Stmts
-    stmt  Stmt
-    str StrExpr
-    expr Expr
-    exprs Exprs
+    stmts ast.Stmts
+    stmt  ast.Stmt
+    str ast.StrExpr
+    expr ast.Expr
+    exprs ast.Exprs
 }
 
 %type<stmts> prog
@@ -43,11 +46,11 @@ prog
 lines
     :
     {
-        $$ = Stmts{}
+        $$ = ast.Stmts{}
     }
     | line lines
     {
-        $$ = append(Stmts{$1}, $2...)
+        $$ = append(ast.Stmts{$1}, $2...)
     }
 
 line
@@ -59,7 +62,7 @@ line
 stmts
     : stmt
     {
-        $$ = Stmts{$1}
+        $$ = ast.Stmts{$1}
     }
     | stmt eos stmts
     {
@@ -77,79 +80,79 @@ stmt
 cmd_stmt
     : cmd
     {
-        $$ = CmdStmt{Cmd: $1}
+        $$ = ast.CmdStmt{Cmd: $1}
     }
     | cmd args
     {
-        $$ = CmdStmt{Cmd: $1, Args: $2}
+        $$ = ast.CmdStmt{Cmd: $1, Args: $2}
     }
 
 begin_stmt
     : BEGIN eos lines END
     {
-        $$ = BeginStmt{Body: $3}
+        $$ = ast.BeginStmt{Body: $3}
     }
 
 if_stmt
     : IF line lines END
     {
-        $$ = IfStmt{Cond: $2, Body: $3}
+        $$ = ast.IfStmt{Cond: $2, Body: $3}
     }
     | IF line lines ELSE eos lines END
     {
-        $$ = IfStmt{Cond: $2, Body: $3, Else: $6}
+        $$ = ast.IfStmt{Cond: $2, Body: $3, Else: $6}
     }
     | IF line lines ELSE if_stmt
     {
-        $$ = IfStmt{Cond: $2, Body: $3, Else: Stmts{$5}}
+        $$ = ast.IfStmt{Cond: $2, Body: $3, Else: ast.Stmts{$5}}
     }
 
 function_stmt
     : FUNCTION args eos lines END
     {
-        $$ = FunctionStmt{Args: $2, Body: $4}
+        $$ = ast.FunctionStmt{Args: $2, Body: $4}
     }
     | FUNCTION eos lines END
     {
-        $$ = FunctionStmt{Body: $3}
+        $$ = ast.FunctionStmt{Body: $3}
     }
 
 pipe_stmt
     : stmt '|' stmt
     {
-        $$ = PipeStmt{Lhs: $1, Rhs: $3}
+        $$ = ast.PipeStmt{Lhs: $1, Rhs: $3}
     }
 
 redirect_stmt
     : stmt '>' STR
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: false}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: false}
     }
     | stmt APPEND_REDIRECT STR
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: true}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $3, Err: false, Append: true}
     }
     | stmt REDIRECT_TO_FD
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $2, Err: false, Append: false}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $2, Err: false, Append: false}
     }
     | stmt '^' STR
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: false}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: false}
     }
     | stmt APPEND_ERR_REDIRECT STR
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: true}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $3, Err: true, Append: true}
     }
     | stmt ERR_REDIRECT_TO_FD
     {
-        $$ = RedirectStmt{Lhs: $1, Rhs: $2, Err: true, Append: false}
+        $$ = ast.RedirectStmt{Lhs: $1, Rhs: $2, Err: true, Append: false}
     }
 
 args
     : arg
     {
-        $$ = Exprs{$1}
+        $$ = ast.Exprs{$1}
     }
     | args arg
     {
@@ -178,23 +181,23 @@ str
 paren_str
     : '(' stmts open_left_paren
     {
-        $$ = append(StrExpr{CmdSub{Body: $2}}, $3...)
+        $$ = append(ast.StrExpr{ast.CmdSub{Body: $2}}, $3...)
     }
     | STR_AND_LEFT_PAREN stmts open_left_paren
     {
-        tmp := append($1, CmdSub{Body: $2})
+        tmp := append($1, ast.CmdSub{Body: $2})
         $$ = append(tmp, $3...)
     }
 
 open_left_paren
     : ')'
     {
-        $$ = StrExpr{}
+        $$ = ast.StrExpr{}
     }
     | RIGHT_PAREN_AND_STR
     | RIGHT_PAREN_AND_STR_AND_LEFT_PAREN stmts open_left_paren
     {
-        tmp := append($1, CmdSub{Body: $2})
+        tmp := append($1, ast.CmdSub{Body: $2})
         $$ = append(tmp, $3...)
     }
 

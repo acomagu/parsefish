@@ -1,9 +1,11 @@
-package main
+package parsefish
 
 import (
 	"fmt"
 	"strconv"
 	"text/scanner"
+
+	"github.com/acomagu/parsefish/ast"
 )
 
 var (
@@ -27,38 +29,38 @@ type Scanner struct {
 	scanner.Scanner
 }
 
-func newIdent(pos scanner.Position, name string) Ident {
-	ident := Ident{Name: name}
+func newIdent(pos scanner.Position, name string) ast.Ident {
+	ident := ast.Ident{Name: name}
 	ident.SetPos(pos)
 	return ident
 }
 
-func newVar(pos scanner.Position, name string) VarExpr {
-	v := VarExpr{Name: name}
+func newVar(pos scanner.Position, name string) ast.VarExpr {
+	v := ast.VarExpr{Name: name}
 	v.SetPos(pos)
 	return v
 }
 
-func newFD(pos scanner.Position, n int) FD {
-	fd := FD{N: n}
+func newFD(pos scanner.Position, n int) ast.FD {
+	fd := ast.FD{N: n}
 	fd.SetPos(pos)
 	return fd
 }
 
-func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
-	str := StrExpr{}
+func (s *Scanner) scanSingleQuoted() (ast.StrExpr, error) {
+	str := ast.StrExpr{}
 	s.Next() // The starting '\''
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
-			return StrExpr{}, fmt.Errorf("unexpected EOF")
+			return ast.StrExpr{}, fmt.Errorf("unexpected EOF")
 
 		case s.isSingleQuotedIdentChar(s.Peek()):
 			ident, err := s.scanSingleQuotedIdent()
 			if err != nil {
-				return StrExpr{}, err
+				return ast.StrExpr{}, err
 			}
 
 			str = append(str, ident)
@@ -70,7 +72,7 @@ func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
 		default:
 			ident, err := s.scanSingleQuotedIdent()
 			if err != nil {
-				return StrExpr{}, err
+				return ast.StrExpr{}, err
 			}
 
 			str = append(str, ident)
@@ -78,20 +80,20 @@ func (s *Scanner) scanSingleQuoted() (StrExpr, error) {
 	}
 }
 
-func (s *Scanner) scanDoubleQuoted() (StrExpr, error) {
-	str := StrExpr{}
+func (s *Scanner) scanDoubleQuoted() (ast.StrExpr, error) {
+	str := ast.StrExpr{}
 	s.Next() // The starting '"'
 
 	for {
 		fmt.Printf("THE NEXT CHAR: %c\n", byte(s.Peek()))
 		switch {
 		case s.Peek() == scanner.EOF:
-			return StrExpr{}, fmt.Errorf("unexpected EOF")
+			return ast.StrExpr{}, fmt.Errorf("unexpected EOF")
 
 		case s.isDoubleQuotedIdentChar(s.Peek()):
 			ident, err := s.scanDoubleQuotedIdent()
 			if err != nil {
-				return StrExpr{}, err
+				return ast.StrExpr{}, err
 			}
 
 			str = append(str, ident)
@@ -99,7 +101,7 @@ func (s *Scanner) scanDoubleQuoted() (StrExpr, error) {
 		case s.Peek() == '$':
 			vare, err := s.scanVar()
 			if err != nil {
-				return StrExpr{}, err
+				return ast.StrExpr{}, err
 			}
 
 			str = append(str, vare)
@@ -111,7 +113,7 @@ func (s *Scanner) scanDoubleQuoted() (StrExpr, error) {
 		default:
 			ident, err := s.scanDoubleQuotedIdent()
 			if err != nil {
-				return StrExpr{}, err
+				return ast.StrExpr{}, err
 			}
 
 			str = append(str, ident)
@@ -154,7 +156,7 @@ func (s *Scanner) isSingleQuotedSpecialChar(c rune) bool {
 	return false
 }
 
-func (s *Scanner) scanDoubleQuotedIdent() (Ident, error) {
+func (s *Scanner) scanDoubleQuotedIdent() (ast.Ident, error) {
 	pos := s.Pos()
 	var ret []rune
 	for s.isDoubleQuotedIdentChar(s.Peek()) {
@@ -162,12 +164,12 @@ func (s *Scanner) scanDoubleQuotedIdent() (Ident, error) {
 		s.Next()
 	}
 	if len(ret) == 0 {
-		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
+		return ast.Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
 	return newIdent(pos, string(ret)), nil
 }
 
-func (s *Scanner) scanSingleQuotedIdent() (Ident, error) {
+func (s *Scanner) scanSingleQuotedIdent() (ast.Ident, error) {
 	pos := s.Pos()
 	var ret []rune
 	for s.isSingleQuotedIdentChar(s.Peek()) {
@@ -175,7 +177,7 @@ func (s *Scanner) scanSingleQuotedIdent() (Ident, error) {
 		s.Next()
 	}
 	if len(ret) == 0 {
-		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
+		return ast.Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
 	return newIdent(pos, string(ret)), nil
 }
@@ -196,7 +198,7 @@ func (s *Scanner) isBrank(c rune) bool {
 	return c == ' ' || c == '\t'
 }
 
-func (s *Scanner) scanVar() (VarExpr, error) {
+func (s *Scanner) scanVar() (ast.VarExpr, error) {
 	pos := s.Pos()
 
 	s.Next() // The '$'
@@ -206,7 +208,7 @@ func (s *Scanner) scanVar() (VarExpr, error) {
 		s.Next()
 	}
 	if len(ret) == 0 {
-		return VarExpr{}, ExpectVarNameError(fmt.Errorf("expected variable name after $"))
+		return ast.VarExpr{}, ExpectVarNameError(fmt.Errorf("expected variable name after $"))
 	}
 
 	name := string(ret)
@@ -217,7 +219,7 @@ func (s *Scanner) isVarChar(c rune) bool {
 	return s.isLetter(c) || s.isNumber(c) || c == '_'
 }
 
-func (s *Scanner) scanIdent() (Ident, error) {
+func (s *Scanner) scanIdent() (ast.Ident, error) {
 	pos := s.Pos()
 	var ret []rune
 	for s.isIdentChar(s.Peek()) {
@@ -226,7 +228,7 @@ func (s *Scanner) scanIdent() (Ident, error) {
 		s.Next()
 	}
 	if len(ret) == 0 {
-		return Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
+		return ast.Ident{}, ExpectIdentError(fmt.Errorf("expected IDENT"))
 	}
 	return newIdent(pos, string(ret)), nil
 }
@@ -235,9 +237,9 @@ func (s *Scanner) isStrChar(c rune) bool {
 	return true
 }
 
-func (s *Scanner) scanStrs() (int, StrExpr, error) {
+func (s *Scanner) scanStrs() (int, ast.StrExpr, error) {
 	withRightParen := false
-	str := StrExpr{}
+	str := ast.StrExpr{}
 	for {
 		switch {
 		case s.Peek() == '$':
@@ -315,7 +317,7 @@ func (s *Scanner) skipComment() {
 	}
 }
 
-func (s *Scanner) scanFD() (FD, error) {
+func (s *Scanner) scanFD() (ast.FD, error) {
 	pos := s.Pos()
 
 	s.Next() // '&'
@@ -330,15 +332,15 @@ func (s *Scanner) scanFD() (FD, error) {
 	}
 	n, err := strconv.Atoi(string(ret))
 	if err != nil {
-		return FD{}, err
+		return ast.FD{}, err
 	}
 	return newFD(pos, n), nil
 }
 
-func (*Scanner) tokenOf(e StrExpr) (int, bool) {
+func (*Scanner) tokenOf(e ast.StrExpr) (int, bool) {
 	lit := ""
 	for _, v := range e {
-		ident, ok := v.(Ident)
+		ident, ok := v.(ast.Ident)
 		if !ok {
 			return 0, false
 		}
@@ -359,7 +361,7 @@ func newScanner() Scanner {
 
 type Lexer struct {
 	s      *Scanner
-	result []Stmt
+	result []ast.Stmt
 }
 
 func (l *Lexer) mainLex(lval *yySymType) (int, error) {
@@ -387,7 +389,7 @@ RETRY:
 			if err != nil {
 				return 0, err
 			}
-			lval.expr = StrExpr{fd}
+			lval.expr = ast.StrExpr{fd}
 			return REDIRECT_TO_FD, nil
 		case '>':
 			return APPEND_REDIRECT, nil
@@ -403,7 +405,7 @@ RETRY:
 			if err != nil {
 				return 0, err
 			}
-			lval.expr = StrExpr{fd}
+			lval.expr = ast.StrExpr{fd}
 			return ERR_REDIRECT_TO_FD, nil
 
 		case '^':
